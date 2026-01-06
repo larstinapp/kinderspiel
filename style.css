@@ -194,8 +194,15 @@ body {
     max-height: 100%;
     overflow-y: auto;
     /* Hide scrollbar for cleaner look */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    /* Hide scrollbar completely */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.screen-content::-webkit-scrollbar {
+    display: none;
 }
 
 .screen-content.card {
@@ -431,17 +438,17 @@ width: 100%;
 
 @media (max-height: 700px) {
     .mode-card {
-        min-height: 150px;
-        padding: 1rem;
+        min-height: 120px;
+        padding: 0.8rem;
     }
 
     .screen-content {
-        padding: 1.5rem;
-        gap: 1rem;
+        padding: 1rem;
+        gap: 0.8rem;
     }
 
     .game-logo {
-        max-height: 100px;
+        max-height: 80px;
     }
 
     h2 {
