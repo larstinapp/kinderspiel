@@ -255,6 +255,9 @@ h2 {
     font-size: 1rem;
     border-radius: 50px;
     box-shadow: var(--shadow-sm);
+    min-width: 150px;
+    display: inline-flex;
+    justify-content: center;
 }
 
 .btn-text:hover {
@@ -406,6 +409,12 @@ input[type="text"]:focus {
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     text-align: center;
     height: 100%;
+    min-height: 200px;
+    /* Enforce minimum height for uniformity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
 }
 
 .mode-card:hover {
@@ -650,8 +659,8 @@ input[type="text"]:focus {
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Optional: If user sees mirror, uncomment below. For now, assuming standard rotate behavior is reliable with wrapper. */
-    /* transform: scaleX(-1); */
+    /* Force horizontal flip to counteract mirroring perspective */
+    transform: scaleX(-1);
 }
 
 .memory-mini-grid {
