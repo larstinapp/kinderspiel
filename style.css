@@ -392,10 +392,85 @@ input[type="text"] {
     font-weight: bold;
 }
 
-.btn-primary {
-    background: var(--secondary-color);
-    color: white;
+/* Comparison Mode */
+.comparison-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
     margin-top: 1rem;
+}
+
+.compare-side {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 1.5rem;
+    flex: 1;
+    min-height: 200px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 5px solid transparent;
+    transition: transform 0.2s, border-color 0.2s;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.compare-side:hover {
+    transform: scale(1.02);
+    border-color: var(--primary-color);
+}
+
+.compare-side .animal-icon {
+    width: 50px;
+    height: 50px;
+}
+
+/* Memory Mode */
+.memory-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.memory-card {
+    height: 120px;
+    background: var(--primary-color);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.3s;
+    border: 5px solid white;
+}
+
+.memory-card.flipped {
+    background: white;
+    color: var(--text-color);
+    transform: rotateY(180deg);
+}
+
+.memory-card.matched {
+    visibility: hidden;
+}
+
+.memory-card img {
+    width: 40px;
+    height: 40px;
+}
+
+.memory-animal-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
 }
 
 /* Responsive */

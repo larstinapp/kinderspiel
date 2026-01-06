@@ -47,11 +47,13 @@
             <!-- Start Screen -->
             <div id="start-screen" class="screen">
                 <img src="safari_background_1767717575932.png" alt="Safari Hintergrund" class="intro-img">
-                <p>Bist du bereit für ein Abenteuer?</p>
+                <p>Welches Abenteuer willst du spielen?</p>
                 <div class="menu-buttons">
                     <button onclick="game.startMode('count')">🦁 Tiere zählen</button>
                     <button onclick="game.startMode('find')">🔍 Zahlen finden</button>
-                    <button onclick="game.startMode('sequence')">🐍 Zahlenreihe</button>
+                    <button onclick="game.startMode('comparison')">🍎 Mehr oder weniger?</button>
+                    <button onclick="game.startMode('memory')">🃏 Memo-Safari</button>
+                    <button class="btn-secondary" onclick="game.startMode('sequence')">🐍 Zahlenreihe (Schwer)</button>
                 </div>
             </div>
 
@@ -80,6 +82,21 @@
                 <h2>Welche Zahl fehlt?</h2>
                 <div id="sequence-display" class="sequence-container"></div>
                 <div id="sequence-options" class="options-grid"></div>
+            </div>
+
+            <!-- Game Mode: Comparison -->
+            <div id="comparison-screen" class="screen">
+                <h2>Wo sind mehr Tiere?</h2>
+                <div class="comparison-container">
+                    <div id="compare-left" class="compare-side" onclick="game.checkComparison('left')"></div>
+                    <div id="compare-right" class="compare-side" onclick="game.checkComparison('right')"></div>
+                </div>
+            </div>
+
+            <!-- Game Mode: Memory -->
+            <div id="memory-screen" class="screen">
+                <h2>Finde die Paare!</h2>
+                <div id="memory-grid" class="memory-grid"></div>
             </div>
 
             <!-- Feedback Overlay -->

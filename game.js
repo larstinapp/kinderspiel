@@ -12,6 +12,10 @@ class NumberSafari {
             'safari_giraffe_1767717621407.png'
         ];
 
+        // Memory state
+        this.flippedCards = [];
+        this.lockBoard = false;
+
         this.init();
     }
 
@@ -173,11 +177,16 @@ class NumberSafari {
             this.setupFindMode();
         } else if (this.currentMode === 'sequence') {
             this.setupSequenceMode();
+        } else if (this.currentMode === 'comparison') {
+            this.setupComparisonMode();
+        } else if (this.currentMode === 'memory') {
+            this.setupMemoryMode();
         }
     }
 
+    // --- MODE: COUNT (Simplified 1-6) ---
     setupCountMode() {
-        const count = Math.floor(Math.random() * 10) + 1;
+        const count = Math.floor(Math.random() * 6) + 1;
         this.correctAnswer = count;
 
         const display = document.getElementById('animal-display');
@@ -189,27 +198,28 @@ class NumberSafari {
             const img = document.createElement('img');
             img.src = this.animals[Math.floor(Math.random() * this.animals.length)];
             img.className = 'animal-icon';
-            img.style.animationDelay = `${Math.random() * 0.5}s`;
             display.appendChild(img);
         }
 
-        this.generateNumberOptions(optionsArea, count);
+        this.generateNumberOptions(optionsArea, count, 3);
     }
 
+    // --- MODE: FIND (Simplified 1-6) ---
     setupFindMode() {
-        const target = Math.floor(Math.random() * 10) + 1;
+        const target = Math.floor(Math.random() * 6) + 1;
         this.correctAnswer = target;
         document.getElementById('target-number').textContent = target;
 
         const optionsArea = document.getElementById('find-options');
         optionsArea.innerHTML = '';
-        this.generateNumberOptions(optionsArea, target);
+        this.generateNumberOptions(optionsArea, target, 3);
     }
 
+    // --- MODE: SEQUENCE (Simplified) ---
     setupSequenceMode() {
-        const start = Math.floor(Math.random() * 7) + 1;
-        const sequence = [start, start + 1, start + 2, start + 3];
-        const missingIndex = Math.floor(Math.random() * 4);
+        const start = Math.floor(Math.random() * 4) + 1;
+        const sequence = [start, start + 1, start + 2];
+        const missingIndex = Math.floor(Math.random() * 3);
         this.correctAnswer = sequence[missingIndex];
 
         const display = document.getElementById('sequence-display');
@@ -224,13 +234,132 @@ class NumberSafari {
             display.appendChild(div);
         });
 
-        this.generateNumberOptions(optionsArea, this.correctAnswer);
+        this.generateNumberOptions(optionsArea, this.correctAnswer, 3);
     }
 
-    generateNumberOptions(container, correct) {
+    // --- MODE: COMPARISON (New) ---
+    setupComparisonMode() {
+        let leftCount = Math.floor(Math.random() * 6) + 1;
+        let rightCount;
+        do {
+            rightCount = Math.floor(Math.random() * 6) + 1;
+        } while (rightCount === leftCount);
+
+        this.correctAnswer = leftCount > rightCount ? 'left' : 'right';
+
+        const leftDiv = document.getElementById('compare-left');
+        const rightDiv = document.getElementById('compare-right');
+        leftDiv.innerHTML = '';
+        rightDiv.innerHTML = '';
+
+        this.fillAnimalContainer(leftDiv, leftCount);
+        this.fillAnimalContainer(rightDiv, rightCount);
+    }
+
+    fillAnimalContainer(container, count) {
+        const type = this.animals[Math.floor(Math.random() * this.animals.length)];
+        for (let i = 0; i < count; i++) {
+            const img = document.createElement('img');
+            img.src = type;
+            img.className = 'animal-icon';
+            container.appendChild(img);
+        }
+    }
+
+    checkComparison(side) {
+        if (side === this.correctAnswer) {
+            this.showFeedback(true);
+        } else {
+            this.showFeedback(false);
+        }
+    }
+
+    // --- MODE: MEMORY (New) ---
+    setupMemoryMode() {
+        const grid = document.getElementById('memory-grid');
+        grid.innerHTML = '';
+        this.lockBoard = false;
+        this.flippedCards = [];
+
+        let used = [];
+        while (used.length < 3) {
+            let val = Math.floor(Math.random() * 6) + 1;
+            if (!used.includes(val)) used.push(val);
+        }
+
+        let deck = [];
+        used.forEach(v => {
+            deck.push({ type: 'number', value: v });
+            deck.push({ type: 'quantity', value: v });
+        });
+        deck.sort(() => Math.random() - 0.5);
+
+        deck.forEach(data => {
+            const card = document.createElement('div');
+            card.className = 'memory-card';
+            card.dataset.value = data.value;
+            card.dataset.type = data.type;
+            card.onclick = () => this.flipMemory(card);
+            grid.appendChild(card);
+        });
+    }
+
+    flipMemory(card) {
+        if (this.lockBoard || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+        card.classList.add('flipped');
+        if (card.dataset.type === 'number') {
+            card.textContent = card.dataset.value;
+        } else {
+            const container = document.createElement('div');
+            container.className = 'memory-animal-container';
+            const imgPath = this.animals[0];
+            for (let i = 0; i < parseInt(card.dataset.value); i++) {
+                const img = document.createElement('img');
+                img.src = imgPath;
+                container.appendChild(img);
+            }
+            card.appendChild(container);
+        }
+
+        this.flippedCards.push(card);
+        if (this.flippedCards.length === 2) {
+            this.lockBoard = true;
+            setTimeout(() => this.checkMemoryMatch(), 1000);
+        }
+    }
+
+    checkMemoryMatch() {
+        const [card1, card2] = this.flippedCards;
+        const isMatch = card1.dataset.value === card2.dataset.value;
+
+        if (isMatch) {
+            card1.classList.add('matched');
+            card2.classList.add('matched');
+            this.score++;
+            this.scoreElement.textContent = this.score;
+            this.updateHeaderScore();
+
+            const allMatched = document.querySelectorAll('.memory-card.matched').length === 6;
+            if (allMatched) {
+                confetti();
+                setTimeout(() => this.setupMemoryMode(), 1500);
+            }
+        } else {
+            card1.classList.remove('flipped');
+            card2.classList.remove('flipped');
+            card1.innerHTML = '';
+            card2.innerHTML = '';
+        }
+
+        this.flippedCards = [];
+        this.lockBoard = false;
+    }
+
+    generateNumberOptions(container, correct, count = 3) {
         let options = [correct];
-        while (options.length < 4) {
-            let rand = Math.floor(Math.random() * 10) + 1;
+        while (options.length < count) {
+            let rand = Math.floor(Math.random() * 6) + 1;
             if (!options.includes(rand)) options.push(rand);
         }
         options.sort((a, b) => a - b);
@@ -257,32 +386,30 @@ class NumberSafari {
         if (isCorrect) {
             this.score++;
             this.scoreElement.textContent = this.score;
-
-            // Update profile score
-            if (this.currentUser) {
-                const profile = this.profiles.find(p => p.id === this.currentUser.id);
-                if (profile) {
-                    profile.score = this.score;
-                    this.saveProfiles();
-                }
-            }
+            this.updateHeaderScore();
 
             this.feedbackEmoji.textContent = '✅';
-            this.feedbackMessage.textContent = 'Richtig! Super gemacht!';
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
+            this.feedbackMessage.textContent = 'Super!';
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
         } else {
             this.feedbackEmoji.textContent = '❌';
-            this.feedbackMessage.textContent = 'Ohoh, probier es nochmal!';
+            this.feedbackMessage.textContent = 'Nochmal?';
         }
 
         setTimeout(() => {
             this.overlay.classList.remove('visible');
             if (isCorrect) this.nextQuestion();
-        }, 1500);
+        }, 1200);
+    }
+
+    updateHeaderScore() {
+        if (this.currentUser) {
+            const profile = this.profiles.find(p => p.id === this.currentUser.id);
+            if (profile) {
+                profile.score = this.score;
+                this.saveProfiles();
+            }
+        }
     }
 }
 
