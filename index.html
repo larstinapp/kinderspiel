@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zahlen-Safari - Lerne Zahlen spielerisch!</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="game-container">
+        <header>
+            <div id="user-info" class="hidden">
+                <span id="current-user-name"></span>
+            </div>
+            <h1>Zahlen-Safari</h1>
+            <div id="score-container" class="hidden">Sterne: <span id="score">0</span> ⭐</div>
+        </header>
+
+        <main id="game-screen">
+            <!-- Profile Selection Screen -->
+            <div id="profile-screen" class="screen active">
+                <h2>Wer spielt heute?</h2>
+                <div id="profile-grid" class="profile-grid"></div>
+                <button class="btn-primary" onclick="game.showCreateProfile()">Neues Profil</button>
+                <button class="btn-secondary" onclick="game.showRankings()">Bestenliste 🏆</button>
+            </div>
+
+            <!-- Create Profile Screen -->
+            <div id="create-profile-screen" class="screen">
+                <h2>Wie heißt du?</h2>
+                <input type="text" id="new-profile-name" placeholder="Dein Name..." maxlength="12">
+                <div class="avatar-selection">
+                    <p>Wähle einen Avatar:</p>
+                    <div id="avatar-options" class="avatar-grid"></div>
+                </div>
+                <div class="menu-buttons">
+                    <button onclick="game.createProfile()">Speichern</button>
+                    <button class="btn-secondary" onclick="game.showProfileScreen()">Abbrechen</button>
+                </div>
+            </div>
+
+            <!-- Start Screen -->
+            <div id="start-screen" class="screen">
+                <img src="safari_background_1767717575932.png" alt="Safari Hintergrund" class="intro-img">
+                <p>Bist du bereit für ein Abenteuer?</p>
+                <div class="menu-buttons">
+                    <button onclick="game.startMode('count')">🦁 Tiere zählen</button>
+                    <button onclick="game.startMode('find')">🔍 Zahlen finden</button>
+                    <button onclick="game.startMode('sequence')">🐍 Zahlenreihe</button>
+                </div>
+            </div>
+
+            <!-- Ranking Screen -->
+            <div id="ranking-screen" class="screen">
+                <h2>Safari-Bestenliste</h2>
+                <div id="ranking-list" class="ranking-container"></div>
+                <button class="btn-secondary" onclick="game.showProfileScreen()">Zurück</button>
+            </div>
+
+            <!-- Game Mode: Count -->
+            <div id="count-screen" class="screen">
+                <h2 id="question-text">Wie viele Tiere siehst du?</h2>
+                <div id="animal-display" class="animal-grid"></div>
+                <div id="answer-options" class="options-grid"></div>
+            </div>
+
+            <!-- Game Mode: Find -->
+            <div id="find-screen" class="screen">
+                <h2 id="find-question">Wo ist die <span id="target-number">?</span></h2>
+                <div id="find-options" class="options-grid"></div>
+            </div>
+
+            <!-- Game Mode: Sequence -->
+            <div id="sequence-screen" class="screen">
+                <h2>Welche Zahl fehlt?</h2>
+                <div id="sequence-display" class="sequence-container"></div>
+                <div id="sequence-options" class="options-grid"></div>
+            </div>
+
+            <!-- Feedback Overlay -->
+            <div id="feedback-overlay" class="overlay hidden">
+                <div id="feedback-content">
+                    <span id="feedback-emoji">✅</span>
+                    <p id="feedback-message">Richtig!</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <button id="back-button" class="btn-secondary hidden" onclick="game.showStartScreen()">Abbrechen</button>
+            <button id="logout-button" class="btn-secondary hidden" onclick="game.logout()">Benutzer wechseln</button>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="game.js"></script>
+</body>
+
+</html>
