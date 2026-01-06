@@ -43,16 +43,77 @@ class SoundManager {
     playPop() {
         this.playTone(600, 'sine', 0.1);
     }
+    playPop() {
+        this.playTone(600, 'sine', 0.1);
+    }
+}
+
+class SafariDB {
+    constructor() {
+        this.STORAGE_KEY = 'safari_profiles_v1';
+        this.data = this.load();
+    }
+
+    load() {
+        try {
+            const raw = localStorage.getItem(this.STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            console.error('SafariDB Load Error:', e);
+            return [];
+        }
+    }
+
+    save() {
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
+            console.log('SafariDB Saved:', this.data.length + ' profiles');
+            return true;
+        } catch (e) {
+            console.error('SafariDB Save Error:', e);
+            alert('Dein Fortschritt konnte nicht gespeichert werden! (Speicher voll oder deaktiviert?)');
+            return false;
+        }
+    }
+
+    addProfile(name, avatar) {
+        if (!name) return null;
+        const newProfile = {
+            id: Date.now(),
+            name: name,
+            avatar: avatar,
+            score: 0,
+            created: new Date().toISOString()
+        };
+        this.data.push(newProfile);
+        this.save();
+        return newProfile;
+    }
+
+    updateScore(profileId, points) {
+        const profile = this.data.find(p => p.id === profileId);
+        if (profile) {
+            profile.score += points;
+            this.save();
+            return profile.score;
+        }
+        return 0;
+    }
+
+    getProfiles() {
+        return this.data.sort((a, b) => b.score - a.score);
+    }
 }
 
 class NumberSafari {
     constructor() {
         this.audio = new SoundManager();
+        this.db = new SafariDB();
         this.score = 0;
         this.currentMode = null;
         this.correctAnswer = null;
         this.currentUser = null;
-        this.profiles = JSON.parse(localStorage.getItem('safari_profiles') || '[]');
+        this.profiles = this.db.getProfiles();
         this.isProcessing = false; // Debounce flag
 
         this.animals = [
@@ -146,7 +207,7 @@ class NumberSafari {
             list.innerHTML = '<p style="grid-column: 1/-1; font-style: italic;">Noch keine Profile. Erstelle eins!</p>';
         }
 
-        this.profiles.forEach(p => {
+        this.db.getProfiles().forEach(p => {
             const card = document.createElement('div');
             card.className = 'profile-card';
             card.onclick = () => this.login(p);
@@ -188,15 +249,10 @@ class NumberSafari {
         const name = nameInput.value.trim();
         if (!name) return alert('Bitte gib einen Namen ein!'); // Could be a nicer modal
 
-        const newProfile = {
-            id: Date.now(),
-            name: name,
-            avatar: this.selectedAvatar,
-            score: 0
-        };
+        const newProfile = this.db.addProfile(name, this.selectedAvatar);
+        this.profiles = this.db.getProfiles(); // Reload local list
+        this.login(newProfile); // Auto-login
 
-        this.profiles.push(newProfile);
-        this.saveProfiles();
         nameInput.value = '';
         this.audio.playSuccess();
         this.showProfileScreen();
@@ -215,7 +271,7 @@ class NumberSafari {
     }
 
     saveProfiles() {
-        localStorage.setItem('safari_profiles', JSON.stringify(this.profiles));
+        // Deprecated: DB handles saving
     }
 
     showRankings() {
@@ -494,7 +550,11 @@ class NumberSafari {
         this.audio.playSuccess();
         this.score += 10;
         this.ui.scoreValue.textContent = this.score;
-        this.saveScore();
+
+        // Save to DB
+        if (this.currentUser) {
+            this.db.updateScore(this.currentUser.id, 10);
+        }
 
         // Visual Confetti
         confetti({
@@ -510,7 +570,9 @@ class NumberSafari {
         // Special handling for memory game completion
         this.score += 20; // Bonus
         this.ui.scoreValue.textContent = this.score;
-        this.saveScore();
+        if (this.currentUser) {
+            this.db.updateScore(this.currentUser.id, 20);
+        }
         confetti({ particleCount: 150, spread: 100 });
         this.showFeedback(true);
     }
@@ -523,11 +585,8 @@ class NumberSafari {
     saveScore() {
         if (this.currentUser) {
             this.currentUser.score = this.score;
-            const idx = this.profiles.findIndex(p => p.id === this.currentUser.id);
-            if (idx !== -1) {
-                this.profiles[idx] = this.currentUser;
-                this.saveProfiles();
-            }
+            this.db.updateScore(this.currentUser.id, 10); // Sync with 10 pts incr
+            // Force refresh local reference if needed, though objects are ref linked usually
         }
     }
 
