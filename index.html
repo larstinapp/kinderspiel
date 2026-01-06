@@ -3,115 +3,180 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Zahlen-Safari - Lerne Zahlen spielerisch!</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <div id="game-container">
-        <header>
-            <div id="user-info" class="hidden">
-                <span id="current-user-name"></span>
+    <div id="app-container">
+        <!-- Floating Elements -->
+        <div class="background-overlay"></div>
+
+        <header class="main-header">
+            <div id="user-display" class="user-badge hidden">
+                <div class="avatar-mini-container">
+                    <img id="current-user-avatar" src="" alt="Avatar" class="avatar-mini">
+                </div>
+                <span id="current-user-name">Spieler</span>
             </div>
-            <h1>Zahlen-Safari</h1>
-            <div id="score-container" class="hidden">Sterne: <span id="score">0</span> ⭐</div>
+
+            <h1 class="game-title">Zahlen-Safari 🦁</h1>
+
+            <div id="score-display" class="score-badge hidden">
+                <span id="score-value">0</span> <span class="star-icon">⭐</span>
+            </div>
         </header>
 
-        <main id="game-screen">
+        <main id="game-area">
             <!-- Profile Selection Screen -->
-            <div id="profile-screen" class="screen active">
-                <h2>Wer spielt heute?</h2>
-                <div id="profile-grid" class="profile-grid"></div>
-                <button class="btn-primary" onclick="game.showCreateProfile()">Neues Profil</button>
-                <button class="btn-secondary" onclick="game.showRankings()">Bestenliste 🏆</button>
-            </div>
+            <section id="profile-screen" class="game-screen active" aria-label="Profilauswahl">
+                <div class="screen-content">
+                    <h2>Wer spielt heute?</h2>
+                    <div id="profile-list" class="profile-grid">
+                        <!-- Profiles injected here -->
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-lg" onclick="game.showCreateProfile()">
+                            <span class="icon">➕</span> Neues Profil
+                        </button>
+                        <button class="btn btn-secondary" onclick="game.showRankings()">
+                            <span class="icon">🏆</span> Bestenliste
+                        </button>
+                    </div>
+                </div>
+            </section>
 
             <!-- Create Profile Screen -->
-            <div id="create-profile-screen" class="screen">
-                <h2>Wie heißt du?</h2>
-                <input type="text" id="new-profile-name" placeholder="Dein Name..." maxlength="12">
-                <div class="avatar-selection">
-                    <p>Wähle einen Avatar:</p>
-                    <div id="avatar-options" class="avatar-grid"></div>
-                </div>
-                <div class="menu-buttons">
-                    <button onclick="game.createProfile()">Speichern</button>
-                    <button class="btn-secondary" onclick="game.showProfileScreen()">Abbrechen</button>
-                </div>
-            </div>
+            <section id="create-profile-screen" class="game-screen" aria-label="Neues Profil erstellen">
+                <div class="screen-content card">
+                    <h2>Dein Abenteuer beginnt!</h2>
+                    <div class="input-group">
+                        <label for="new-profile-name">Wie heißt du?</label>
+                        <input type="text" id="new-profile-name" placeholder="Name eingeben..." maxlength="12"
+                            autocomplete="off">
+                    </div>
 
-            <!-- Start Screen -->
-            <div id="start-screen" class="screen">
-                <img src="safari_background_1767717575932.png" alt="Safari Hintergrund" class="intro-img">
-                <p>Welches Abenteuer willst du spielen?</p>
-                <div class="menu-buttons">
-                    <button onclick="game.startMode('count')">🦁 Tiere zählen</button>
-                    <button onclick="game.startMode('find')">🔍 Zahlen finden</button>
-                    <button onclick="game.startMode('comparison')">🍎 Mehr oder weniger?</button>
-                    <button onclick="game.startMode('memory')">🃏 Memo-Safari</button>
-                    <button class="btn-secondary" onclick="game.startMode('sequence')">🐍 Zahlenreihe (Schwer)</button>
+                    <div class="avatar-ui">
+                        <p>Wähle deinen Begleiter:</p>
+                        <div id="avatar-options" class="avatar-grid"></div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="game.createProfile()">Los geht's!</button>
+                        <button class="btn btn-text" onclick="game.showProfileScreen()">Zurück</button>
+                    </div>
                 </div>
-            </div>
+            </section>
+
+            <!-- Main Menu / Start Screen -->
+            <section id="start-screen" class="game-screen" aria-label="Hauptmenü">
+                <div class="screen-content">
+                    <div class="hero-image">
+                        <img src="safari_background_1767717575932.png" alt="Safari Landschaft">
+                    </div>
+                    <h2>Wähle dein Spiel</h2>
+                    <div class="mode-grid">
+                        <button class="mode-card" onclick="game.startMode('count')">
+                            <div class="mode-icon">🦁</div>
+                            <div class="mode-info">
+                                <h3>Tiere zählen</h3>
+                                <p>Wie viele siehst du?</p>
+                            </div>
+                        </button>
+                        <button class="mode-card" onclick="game.startMode('find')">
+                            <div class="mode-icon">🔍</div>
+                            <div class="mode-info">
+                                <h3>Zahlen finden</h3>
+                                <p>Wo ist die Zahl?</p>
+                            </div>
+                        </button>
+                        <button class="mode-card" onclick="game.startMode('comparison')">
+                            <div class="mode-icon">⚖️</div>
+                            <div class="mode-info">
+                                <h3>Vergleichen</h3>
+                                <p>Wo ist mehr?</p>
+                            </div>
+                        </button>
+                        <button class="mode-card" onclick="game.startMode('memory')">
+                            <div class="mode-icon">🃏</div>
+                            <div class="mode-info">
+                                <h3>Memo-Safari</h3>
+                                <p>Finde Paare</p>
+                            </div>
+                        </button>
+                    </div>
+                    <button class="btn btn-text btn-small" onclick="game.logout()">Anderes Profil wählen</button>
+                </div>
+            </section>
 
             <!-- Ranking Screen -->
-            <div id="ranking-screen" class="screen">
-                <h2>Safari-Bestenliste</h2>
-                <div id="ranking-list" class="ranking-container"></div>
-                <button class="btn-secondary" onclick="game.showProfileScreen()">Zurück</button>
-            </div>
+            <section id="ranking-screen" class="game-screen" aria-label="Bestenliste">
+                <div class="screen-content card">
+                    <h2>🏆 Safari-Champions</h2>
+                    <div id="ranking-list" class="ranking-list"></div>
+                    <button class="btn btn-primary" onclick="game.showProfileScreen()">Toll!</button>
+                </div>
+            </section>
 
             <!-- Game Mode: Count -->
-            <div id="count-screen" class="screen">
-                <h2 id="question-text">Wie viele Tiere siehst du?</h2>
-                <div id="animal-display" class="animal-grid"></div>
-                <div id="answer-options" class="options-grid"></div>
-            </div>
+            <section id="count-screen" class="game-screen game-mode" aria-label="Spiel: Tiere zählen">
+                <div class="question-header">
+                    <h2 class="question-text">Wie viele Tiere siehst du?</h2>
+                </div>
+                <div id="animal-display" class="game-stage animal-stage"></div>
+                <div id="answer-options" class="options-bar"></div>
+            </section>
 
             <!-- Game Mode: Find -->
-            <div id="find-screen" class="screen">
-                <h2 id="find-question">Wo ist die <span id="target-number">?</span></h2>
-                <div id="find-options" class="options-grid"></div>
-            </div>
-
-            <!-- Game Mode: Sequence -->
-            <div id="sequence-screen" class="screen">
-                <h2>Welche Zahl fehlt?</h2>
-                <div id="sequence-display" class="sequence-container"></div>
-                <div id="sequence-options" class="options-grid"></div>
-            </div>
+            <section id="find-screen" class="game-screen game-mode" aria-label="Spiel: Zahlen finden">
+                <div class="question-header">
+                    <h2 class="question-text">Finde die Zahl <span id="target-number" class="highlight-number">?</span>
+                    </h2>
+                </div>
+                <div id="find-options" class="game-stage options-grid-large"></div>
+            </section>
 
             <!-- Game Mode: Comparison -->
-            <div id="comparison-screen" class="screen">
-                <h2>Wo sind mehr Tiere?</h2>
-                <div class="comparison-container">
-                    <div id="compare-left" class="compare-side" onclick="game.checkComparison('left')"></div>
-                    <div id="compare-right" class="compare-side" onclick="game.checkComparison('right')"></div>
+            <section id="comparison-screen" class="game-screen game-mode" aria-label="Spiel: Vergleichen">
+                <div class="question-header">
+                    <h2 class="question-text">Wo sind mehr Tiere?</h2>
                 </div>
-            </div>
+                <div class="comparison-stage">
+                    <button id="compare-left" class="compare-card" onclick="game.checkComparison('left')"></button>
+                    <div class="vs-badge">VS</div>
+                    <button id="compare-right" class="compare-card" onclick="game.checkComparison('right')"></button>
+                </div>
+            </section>
 
             <!-- Game Mode: Memory -->
-            <div id="memory-screen" class="screen">
-                <h2>Finde die Paare!</h2>
-                <div id="memory-grid" class="memory-grid"></div>
-            </div>
-
-            <!-- Feedback Overlay -->
-            <div id="feedback-overlay" class="overlay hidden">
-                <div id="feedback-content">
-                    <span id="feedback-emoji">✅</span>
-                    <p id="feedback-message">Richtig!</p>
+            <section id="memory-screen" class="game-screen game-mode" aria-label="Spiel: Memory">
+                <div class="question-header">
+                    <h2 class="question-text">Finde die Paare!</h2>
                 </div>
-            </div>
+                <div id="memory-grid" class="memory-board"></div>
+            </section>
+
         </main>
 
-        <footer>
-            <button id="back-button" class="btn-secondary hidden" onclick="game.showStartScreen()">Abbrechen</button>
-            <button id="logout-button" class="btn-secondary hidden" onclick="game.logout()">Benutzer wechseln</button>
+        <footer class="game-footer">
+            <button id="back-button" class="btn btn-icon hidden" onclick="game.showStartScreen()"
+                aria-label="Zurück zum Menü">
+                🏠 Menü
+            </button>
         </footer>
+
+        <!-- Overlays -->
+        <div id="feedback-overlay" class="overlay hidden">
+            <div class="feedback-content">
+                <div id="feedback-animation-container"></div>
+                <span id="feedback-emoji" class="emoji-large"></span>
+                <p id="feedback-message" class="message-large"></p>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>

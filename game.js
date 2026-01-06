@@ -1,10 +1,59 @@
+/**
+ * Zahlen-Safari - Game Engine
+ */
+
+class SoundManager {
+    constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.enabled = true;
+    }
+
+    playTone(freq, type, duration) {
+        if (!this.enabled) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.frequency.value = freq;
+        osc.type = type;
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, this.ctx.currentTime + duration);
+        osc.stop(this.ctx.currentTime + duration);
+    }
+
+    playSuccess() {
+        // Happy major chord arpeggio
+        this.playTone(523.25, 'sine', 0.2); // C5
+        setTimeout(() => this.playTone(659.25, 'sine', 0.2), 100); // E5
+        setTimeout(() => this.playTone(783.99, 'sine', 0.4), 200); // G5
+    }
+
+    playError() {
+        // Low discord
+        this.playTone(150, 'sawtooth', 0.4);
+        setTimeout(() => this.playTone(140, 'sawtooth', 0.4), 100);
+    }
+
+    playClick() {
+        this.playTone(800, 'triangle', 0.05);
+    }
+
+    playPop() {
+        this.playTone(600, 'sine', 0.1);
+    }
+}
+
 class NumberSafari {
     constructor() {
+        this.audio = new SoundManager();
         this.score = 0;
         this.currentMode = null;
         this.correctAnswer = null;
         this.currentUser = null;
         this.profiles = JSON.parse(localStorage.getItem('safari_profiles') || '[]');
+        this.isProcessing = false; // Debounce flag
 
         this.animals = [
             'safari_lion_1767717591178.png',
@@ -12,53 +61,108 @@ class NumberSafari {
             'safari_giraffe_1767717621407.png'
         ];
 
-        // Memory state
-        this.flippedCards = [];
-        this.lockBoard = false;
+        // Caching DOM elements
+        this.ui = {
+            screens: document.querySelectorAll('.game-screen'),
+            scoreDisplay: document.getElementById('score-display'),
+            scoreValue: document.getElementById('score-value'),
+            userDisplay: document.getElementById('user-display'),
+            userName: document.getElementById('current-user-name'),
+            userAvatar: document.getElementById('current-user-avatar'),
+            backButton: document.getElementById('back-button'),
+            feedbackOverlay: document.getElementById('feedback-overlay'),
+            feedbackEmoji: document.getElementById('feedback-emoji'),
+            feedbackMessage: document.getElementById('feedback-message'),
+            feedbackAnim: document.getElementById('feedback-animation-container')
+        };
+
+        // Memory Game State
+        this.memoryState = {
+            flipped: [],
+            locked: false,
+            pairs: 0
+        };
 
         this.init();
     }
 
     init() {
-        this.scoreElement = document.getElementById('score');
-        this.backButton = document.getElementById('back-button');
-        this.logoutButton = document.getElementById('logout-button');
-        this.overlay = document.getElementById('feedback-overlay');
-        this.feedbackEmoji = document.getElementById('feedback-emoji');
-        this.feedbackMessage = document.getElementById('feedback-message');
-
+        // Initialize by showing profile screen
         this.showProfileScreen();
+
+        // Add global click listener for sound
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.profile-card')) {
+                this.audio.playClick();
+                // Resume AudioContext if suspended (browser requirements)
+                if (this.audio.ctx.state === 'suspended') this.audio.ctx.resume();
+            }
+        });
     }
 
-    // --- Profile Management ---
+    // --- Navigation & UI ---
+
+    hideAllScreens() {
+        this.ui.screens.forEach(s => s.classList.remove('active'));
+    }
+
+    showScreen(id) {
+        this.hideAllScreens();
+        const screen = document.getElementById(id);
+        if (screen) screen.classList.add('active');
+
+        // Manage Back Button visibility
+        if (id !== 'start-screen' && id !== 'profile-screen' && id !== 'create-profile-screen') {
+            this.ui.backButton.classList.remove('hidden');
+        } else {
+            this.ui.backButton.classList.add('hidden');
+        }
+    }
+
+    updateHeader() {
+        if (this.currentUser) {
+            this.ui.userDisplay.classList.remove('hidden');
+            this.ui.scoreDisplay.classList.remove('hidden');
+            this.ui.userName.textContent = this.currentUser.name;
+            this.ui.userAvatar.src = this.currentUser.avatar;
+            this.ui.scoreValue.textContent = this.score;
+        } else {
+            this.ui.userDisplay.classList.add('hidden');
+            this.ui.scoreDisplay.classList.add('hidden');
+        }
+    }
+
+    // --- Profile System ---
 
     showProfileScreen() {
-        this.hideAllScreens();
-        document.getElementById('profile-screen').classList.add('active');
-        this.renderProfiles();
-        this.updateHeader(false);
-    }
+        this.currentUser = null;
+        this.updateHeader();
+        this.showScreen('profile-screen');
 
-    renderProfiles() {
-        const grid = document.getElementById('profile-grid');
-        grid.innerHTML = '';
+        const list = document.getElementById('profile-list');
+        list.innerHTML = '';
+
+        if (this.profiles.length === 0) {
+            list.innerHTML = '<p style="grid-column: 1/-1; font-style: italic;">Noch keine Profile. Erstelle eins!</p>';
+        }
+
         this.profiles.forEach(p => {
             const card = document.createElement('div');
             card.className = 'profile-card';
             card.onclick = () => this.login(p);
             card.innerHTML = `
-                <img src="${p.avatar}" class="profile-avatar">
+                <img src="${p.avatar}" class="profile-avatar" alt="Avatar">
                 <div class="profile-name">${p.name}</div>
+                <div style="font-size: 0.9rem; color: #888;">${p.score} ⭐</div>
             `;
-            grid.appendChild(card);
+            list.appendChild(card);
         });
     }
 
     showCreateProfile() {
-        this.hideAllScreens();
-        document.getElementById('create-profile-screen').classList.add('active');
-        const avatarGrid = document.getElementById('avatar-options');
-        avatarGrid.innerHTML = '';
+        this.showScreen('create-profile-screen');
+        const grid = document.getElementById('avatar-options');
+        grid.innerHTML = '';
         this.selectedAvatar = this.animals[0];
 
         this.animals.forEach(a => {
@@ -66,19 +170,23 @@ class NumberSafari {
             img.src = a;
             img.className = 'avatar-option';
             if (a === this.selectedAvatar) img.classList.add('selected');
+
             img.onclick = (e) => {
                 document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
                 e.target.classList.add('selected');
                 this.selectedAvatar = a;
+                this.audio.playPop();
             };
-            avatarGrid.appendChild(img);
+            grid.appendChild(img);
         });
+
+        document.getElementById('new-profile-name').focus();
     }
 
     createProfile() {
         const nameInput = document.getElementById('new-profile-name');
         const name = nameInput.value.trim();
-        if (!name) return alert('Bitte gib einen Namen ein!');
+        if (!name) return alert('Bitte gib einen Namen ein!'); // Could be a nicer modal
 
         const newProfile = {
             id: Date.now(),
@@ -90,15 +198,15 @@ class NumberSafari {
         this.profiles.push(newProfile);
         this.saveProfiles();
         nameInput.value = '';
+        this.audio.playSuccess();
         this.showProfileScreen();
     }
 
     login(profile) {
         this.currentUser = profile;
         this.score = profile.score;
-        this.scoreElement.textContent = this.score;
+        this.updateHeader();
         this.showStartScreen();
-        this.updateHeader(true);
     }
 
     logout() {
@@ -110,308 +218,333 @@ class NumberSafari {
         localStorage.setItem('safari_profiles', JSON.stringify(this.profiles));
     }
 
-    updateHeader(showInfo) {
-        const userInfo = document.getElementById('user-info');
-        const scoreContainer = document.getElementById('score-container');
-        if (showInfo && this.currentUser) {
-            userInfo.classList.remove('hidden');
-            scoreContainer.classList.remove('hidden');
-            document.getElementById('current-user-name').textContent = this.currentUser.name;
-            this.logoutButton.classList.remove('hidden');
-        } else {
-            userInfo.classList.add('hidden');
-            scoreContainer.classList.add('hidden');
-            this.logoutButton.classList.add('hidden');
-        }
-    }
-
-    // --- Ranking ---
-
     showRankings() {
-        this.hideAllScreens();
-        document.getElementById('ranking-screen').classList.add('active');
+        this.showScreen('ranking-screen');
         const list = document.getElementById('ranking-list');
         list.innerHTML = '';
 
         const sorted = [...this.profiles].sort((a, b) => b.score - a.score);
+
         sorted.forEach((p, i) => {
             const item = document.createElement('div');
-            item.className = 'ranking-item';
+            item.style.cssText = 'display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid #eee; align-items: center;';
+
+            let rankEmoji = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : `#${i + 1}`));
+
             item.innerHTML = `
-                <span class="ranking-rank">#${i + 1}</span>
-                <span class="ranking-user">${p.name}</span>
-                <span class="ranking-score">${p.score} ⭐</span>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span style="font-weight: bold; font-size: 1.2rem; width: 30px;">${rankEmoji}</span>
+                    <img src="${p.avatar}" style="width: 30px; height: 30px; border-radius: 50%;">
+                    <span>${p.name}</span>
+                </div>
+                <span style="font-weight: bold; color: var(--primary);">${p.score} ⭐</span>
             `;
             list.appendChild(item);
         });
     }
 
+    showStartScreen() {
+        this.currentMode = null;
+        this.showScreen('start-screen');
+    }
+
     // --- Game Logic ---
 
     startMode(mode) {
+        this.isProcessing = false;
         this.currentMode = mode;
-        this.hideAllScreens();
-        document.getElementById(`${mode}-screen`).classList.add('active');
-        this.backButton.classList.remove('hidden');
-        this.logoutButton.classList.add('hidden');
-        this.nextQuestion();
+        this.showScreen(`${mode}-screen`);
+        this.nextLevel();
     }
 
-    showStartScreen() {
-        this.currentMode = null;
-        this.hideAllScreens();
-        document.getElementById('start-screen').classList.add('active');
-        this.backButton.classList.add('hidden');
-        if (this.currentUser) this.logoutButton.classList.remove('hidden');
-    }
-
-    hideAllScreens() {
-        const screens = document.querySelectorAll('.screen');
-        screens.forEach(s => s.classList.remove('active'));
-    }
-
-    nextQuestion() {
-        if (this.currentMode === 'count') {
-            this.setupCountMode();
-        } else if (this.currentMode === 'find') {
-            this.setupFindMode();
-        } else if (this.currentMode === 'sequence') {
-            this.setupSequenceMode();
-        } else if (this.currentMode === 'comparison') {
-            this.setupComparisonMode();
-        } else if (this.currentMode === 'memory') {
-            this.setupMemoryMode();
+    nextLevel() {
+        this.isProcessing = false;
+        switch (this.currentMode) {
+            case 'count': this.setupCountMode(); break;
+            case 'find': this.setupFindMode(); break;
+            case 'comparison': this.setupComparisonMode(); break;
+            case 'memory': this.setupMemoryMode(); break;
         }
     }
 
-    // --- MODE: COUNT (Simplified 1-6) ---
+    // Mode: Count (1-9)
     setupCountMode() {
-        const count = Math.floor(Math.random() * 6) + 1;
+        const count = Math.floor(Math.random() * 9) + 1;
         this.correctAnswer = count;
 
         const display = document.getElementById('animal-display');
-        const optionsArea = document.getElementById('answer-options');
+        const options = document.getElementById('answer-options');
         display.innerHTML = '';
-        optionsArea.innerHTML = '';
+        options.innerHTML = '';
+
+        // Random animal type for this round
+        const animalImg = this.animals[Math.floor(Math.random() * this.animals.length)];
 
         for (let i = 0; i < count; i++) {
             const img = document.createElement('img');
-            img.src = this.animals[Math.floor(Math.random() * this.animals.length)];
-            img.className = 'animal-icon';
+            img.src = animalImg;
+            img.className = 'animal-item';
+            // Slight random rotation for natural feel
+            img.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
             display.appendChild(img);
         }
 
-        this.generateNumberOptions(optionsArea, count, 3);
+        this.generateOptions(options, count, 3);
     }
 
-    // --- MODE: FIND (Simplified 1-6) ---
+    // Mode: Find (1-9)
     setupFindMode() {
-        const target = Math.floor(Math.random() * 6) + 1;
+        const target = Math.floor(Math.random() * 9) + 1;
         this.correctAnswer = target;
         document.getElementById('target-number').textContent = target;
 
-        const optionsArea = document.getElementById('find-options');
-        optionsArea.innerHTML = '';
-        this.generateNumberOptions(optionsArea, target, 3);
+        const options = document.getElementById('find-options');
+        options.innerHTML = '';
+        this.generateOptions(options, target, 5); // More options for find mode
     }
 
-    // --- MODE: SEQUENCE (Simplified) ---
-    setupSequenceMode() {
-        const start = Math.floor(Math.random() * 4) + 1;
-        const sequence = [start, start + 1, start + 2];
-        const missingIndex = Math.floor(Math.random() * 3);
-        this.correctAnswer = sequence[missingIndex];
-
-        const display = document.getElementById('sequence-display');
-        const optionsArea = document.getElementById('sequence-options');
-        display.innerHTML = '';
-        optionsArea.innerHTML = '';
-
-        sequence.forEach((num, index) => {
-            const div = document.createElement('div');
-            div.className = index === missingIndex ? 'seq-item missing' : 'seq-item';
-            div.textContent = index === missingIndex ? '?' : num;
-            display.appendChild(div);
-        });
-
-        this.generateNumberOptions(optionsArea, this.correctAnswer, 3);
-    }
-
-    // --- MODE: COMPARISON (New) ---
+    // Mode: Comparison
     setupComparisonMode() {
-        let leftCount = Math.floor(Math.random() * 6) + 1;
-        let rightCount;
-        do {
-            rightCount = Math.floor(Math.random() * 6) + 1;
-        } while (rightCount === leftCount);
+        // Ensure distinct values
+        let left = Math.floor(Math.random() * 9) + 1;
+        let right;
+        do { right = Math.floor(Math.random() * 9) + 1; } while (right === left);
 
-        this.correctAnswer = leftCount > rightCount ? 'left' : 'right';
+        this.correctAnswer = left > right ? 'left' : 'right';
 
-        const leftDiv = document.getElementById('compare-left');
-        const rightDiv = document.getElementById('compare-right');
-        leftDiv.innerHTML = '';
-        rightDiv.innerHTML = '';
+        const leftBox = document.getElementById('compare-left');
+        const rightBox = document.getElementById('compare-right');
 
-        this.fillAnimalContainer(leftDiv, leftCount);
-        this.fillAnimalContainer(rightDiv, rightCount);
+        this.fillBox(leftBox, left);
+        this.fillBox(rightBox, right);
     }
 
-    fillAnimalContainer(container, count) {
-        const type = this.animals[Math.floor(Math.random() * this.animals.length)];
+    fillBox(box, count) {
+        box.innerHTML = ''; // Clear previous content
+        const animalImg = this.animals[Math.floor(Math.random() * this.animals.length)];
+
         for (let i = 0; i < count; i++) {
             const img = document.createElement('img');
-            img.src = type;
-            img.className = 'animal-icon';
-            container.appendChild(img);
+            img.src = animalImg;
+            img.className = 'animal-item';
+            img.style.width = count > 5 ? '40px' : '60px'; // Adjust size based on density
+            img.style.height = count > 5 ? '40px' : '60px';
+            box.appendChild(img);
         }
     }
 
     checkComparison(side) {
+        if (this.isProcessing) return;
+
+        // Visual feedback on selection
+        const selectedBox = document.getElementById(`compare-${side}`);
+
         if (side === this.correctAnswer) {
-            this.showFeedback(true);
+            selectedBox.style.borderColor = 'var(--success)';
+            this.handleSuccess();
         } else {
-            this.showFeedback(false);
+            selectedBox.classList.add('shake');
+            selectedBox.style.borderColor = 'var(--danger)';
+            setTimeout(() => selectedBox.classList.remove('shake'), 500);
+            this.handleError();
         }
     }
 
-    // --- MODE: MEMORY (New) ---
+    // Mode: Memory
     setupMemoryMode() {
         const grid = document.getElementById('memory-grid');
         grid.innerHTML = '';
-        this.lockBoard = false;
-        this.flippedCards = [];
+        this.memoryState = { flipped: [], locked: false, pairs: 0 };
 
-        let used = [];
-        while (used.length < 3) {
+        // 3 pairs for 6 cards total
+        const pairsCount = 3;
+        const usedValues = [];
+
+        while (usedValues.length < pairsCount) {
             let val = Math.floor(Math.random() * 6) + 1;
-            if (!used.includes(val)) used.push(val);
+            if (!usedValues.includes(val)) usedValues.push(val);
         }
 
         let deck = [];
-        used.forEach(v => {
-            deck.push({ type: 'number', value: v });
-            deck.push({ type: 'quantity', value: v });
+        usedValues.forEach(val => {
+            deck.push({ val, type: 'num' });
+            deck.push({ val, type: 'img' });
         });
+
+        // Shuffle
         deck.sort(() => Math.random() - 0.5);
 
-        deck.forEach(data => {
+        deck.forEach(cardData => {
             const card = document.createElement('div');
             card.className = 'memory-card';
-            card.dataset.value = data.value;
-            card.dataset.type = data.type;
-            card.onclick = () => this.flipMemory(card);
+
+            const front = document.createElement('div');
+            front.className = 'memory-card-front';
+
+            const back = document.createElement('div');
+            back.className = 'memory-card-back';
+
+            if (cardData.type === 'num') {
+                back.textContent = cardData.val;
+            } else {
+                const miniGrid = document.createElement('div');
+                miniGrid.className = 'memory-mini-grid';
+                const imgSrc = this.animals[0]; // Use lion for consistency in memory
+                for (let i = 0; i < cardData.val; i++) {
+                    const img = document.createElement('img');
+                    img.src = imgSrc;
+                    img.className = 'memory-mini-img';
+                    miniGrid.appendChild(img);
+                }
+                back.appendChild(miniGrid);
+            }
+
+            card.appendChild(front);
+            card.appendChild(back);
+
+            card.onclick = () => this.flipCard(card, cardData);
             grid.appendChild(card);
         });
     }
 
-    flipMemory(card) {
-        if (this.lockBoard || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+    flipCard(card, data) {
+        if (this.memoryState.locked || card.classList.contains('flipped')) return;
 
+        this.audio.playPop();
         card.classList.add('flipped');
-        if (card.dataset.type === 'number') {
-            card.textContent = card.dataset.value;
-        } else {
-            const container = document.createElement('div');
-            container.className = 'memory-animal-container';
-            const imgPath = this.animals[0];
-            for (let i = 0; i < parseInt(card.dataset.value); i++) {
-                const img = document.createElement('img');
-                img.src = imgPath;
-                container.appendChild(img);
-            }
-            card.appendChild(container);
-        }
+        this.memoryState.flipped.push({ card, data });
 
-        this.flippedCards.push(card);
-        if (this.flippedCards.length === 2) {
-            this.lockBoard = true;
-            setTimeout(() => this.checkMemoryMatch(), 1000);
+        if (this.memoryState.flipped.length === 2) {
+            this.checkMemoryMatch();
         }
     }
 
     checkMemoryMatch() {
-        const [card1, card2] = this.flippedCards;
-        const isMatch = card1.dataset.value === card2.dataset.value;
+        this.memoryState.locked = true;
+        const [first, second] = this.memoryState.flipped;
 
-        if (isMatch) {
-            card1.classList.add('matched');
-            card2.classList.add('matched');
-            this.score++;
-            this.scoreElement.textContent = this.score;
-            this.updateHeaderScore();
+        const match = first.data.val === second.data.val;
 
-            const allMatched = document.querySelectorAll('.memory-card.matched').length === 6;
-            if (allMatched) {
-                confetti();
-                setTimeout(() => this.setupMemoryMode(), 1500);
-            }
+        if (match) {
+            this.audio.playSuccess();
+            setTimeout(() => {
+                first.card.style.visibility = 'hidden';
+                second.card.style.visibility = 'hidden';
+                this.memoryState.flipped = [];
+                this.memoryState.locked = false;
+                this.memoryState.pairs++;
+
+                if (this.memoryState.pairs === 3) {
+                    this.handleLevelComplete(); // Memory full level complete
+                }
+            }, 1000);
         } else {
-            card1.classList.remove('flipped');
-            card2.classList.remove('flipped');
-            card1.innerHTML = '';
-            card2.innerHTML = '';
+            this.audio.playError();
+            setTimeout(() => {
+                first.card.classList.remove('flipped');
+                second.card.classList.remove('flipped');
+                this.memoryState.flipped = [];
+                this.memoryState.locked = false;
+            }, 1000);
         }
-
-        this.flippedCards = [];
-        this.lockBoard = false;
     }
 
-    generateNumberOptions(container, correct, count = 3) {
-        let options = [correct];
-        while (options.length < count) {
-            let rand = Math.floor(Math.random() * 6) + 1;
-            if (!options.includes(rand)) options.push(rand);
-        }
-        options.sort((a, b) => a - b);
+    // --- Helpers ---
 
-        options.forEach(opt => {
+    generateOptions(container, correct, count) {
+        const opts = [correct];
+        while (opts.length < count) {
+            let r = Math.floor(Math.random() * 9) + 1;
+            if (!opts.includes(r)) opts.push(r);
+        }
+        opts.sort((a, b) => a - b);
+
+        opts.forEach(val => {
             const btn = document.createElement('button');
             btn.className = 'option-btn';
-            btn.textContent = opt;
-            btn.onclick = () => this.checkAnswer(opt);
+            btn.textContent = val;
+            btn.onclick = (e) => this.checkAnswer(val, e.target);
             container.appendChild(btn);
         });
     }
 
-    checkAnswer(answer) {
-        if (answer === this.correctAnswer) {
-            this.showFeedback(true);
+    checkAnswer(val, btnElement) {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        if (val === this.correctAnswer) {
+            btnElement.style.background = 'var(--success)';
+            btnElement.style.color = 'white';
+            this.handleSuccess();
         } else {
-            this.showFeedback(false);
+            btnElement.style.background = 'var(--danger)';
+            btnElement.style.color = 'white';
+            btnElement.classList.add('shake');
+            this.handleError();
+            setTimeout(() => {
+                this.isProcessing = false;
+                btnElement.classList.remove('shake');
+                btnElement.style.background = ''; // partial reset
+                btnElement.style.color = '';
+            }, 600);
         }
     }
 
-    showFeedback(isCorrect) {
-        this.overlay.classList.add('visible');
-        if (isCorrect) {
-            this.score++;
-            this.scoreElement.textContent = this.score;
-            this.updateHeaderScore();
+    handleSuccess() {
+        this.audio.playSuccess();
+        this.score += 10;
+        this.ui.scoreValue.textContent = this.score;
+        this.saveScore();
 
-            this.feedbackEmoji.textContent = '✅';
-            this.feedbackMessage.textContent = 'Super!';
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-        } else {
-            this.feedbackEmoji.textContent = '❌';
-            this.feedbackMessage.textContent = 'Nochmal?';
-        }
+        // Visual Confetti
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
 
-        setTimeout(() => {
-            this.overlay.classList.remove('visible');
-            if (isCorrect) this.nextQuestion();
-        }, 1200);
+        this.showFeedback(true);
     }
 
-    updateHeaderScore() {
+    handleLevelComplete() {
+        // Special handling for memory game completion
+        this.score += 20; // Bonus
+        this.ui.scoreValue.textContent = this.score;
+        this.saveScore();
+        confetti({ particleCount: 150, spread: 100 });
+        this.showFeedback(true);
+    }
+
+    handleError() {
+        this.audio.playError();
+        // this.showFeedback(false); // Optional: Pop up for error? Maybe just shake is enough.
+    }
+
+    saveScore() {
         if (this.currentUser) {
-            const profile = this.profiles.find(p => p.id === this.currentUser.id);
-            if (profile) {
-                profile.score = this.score;
+            this.currentUser.score = this.score;
+            const idx = this.profiles.findIndex(p => p.id === this.currentUser.id);
+            if (idx !== -1) {
+                this.profiles[idx] = this.currentUser;
                 this.saveProfiles();
             }
         }
     }
+
+    showFeedback(isSuccess) {
+        // Only showing success modal to move to next level
+        if (!isSuccess) return;
+
+        this.ui.feedbackEmoji.textContent = '🎉';
+        this.ui.feedbackMessage.textContent = 'Richtig!';
+        this.ui.feedbackOverlay.classList.add('visible');
+
+        setTimeout(() => {
+            this.ui.feedbackOverlay.classList.remove('visible');
+            this.nextLevel();
+        }, 1500);
+    }
 }
 
-
+// Start Game
 const game = new NumberSafari();
