@@ -248,15 +248,20 @@ h2 {
 }
 
 .btn-text {
-    background: transparent;
+    background: white;
+    border: 2px solid #ccc;
     color: var(--text-light);
-    padding: 0.5rem 1rem;
+    padding: 0.8rem 2rem;
     font-size: 1rem;
+    border-radius: 50px;
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-text:hover {
     color: var(--primary);
-    background: rgba(0, 0, 0, 0.05);
+    border-color: var(--primary);
+    background: white;
+    transform: translateY(-2px);
 }
 
 .btn-icon {
@@ -636,6 +641,17 @@ input[type="text"]:focus {
     flex-wrap: wrap;
     padding: 5px;
     gap: 2px;
+}
+
+/* Ensure content is not mirrored if parent flip is causing issues */
+.memory-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Optional: If user sees mirror, uncomment below. For now, assuming standard rotate behavior is reliable with wrapper. */
+    /* transform: scaleX(-1); */
 }
 
 .memory-mini-grid {
