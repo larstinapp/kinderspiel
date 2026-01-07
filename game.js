@@ -144,6 +144,10 @@ class NumberSafari {
             pairs: 0
         };
 
+        // Round counter for break after 10 rounds per game mode
+        this.roundsPlayed = 0;
+        this.BREAK_AFTER_ROUNDS = 10;
+
         this.init();
     }
 
@@ -309,12 +313,53 @@ class NumberSafari {
     startMode(mode) {
         this.isProcessing = false;
         this.currentMode = mode;
+        this.roundsPlayed = 0; // Reset round counter for new game mode
         this.showScreen(`${mode}-screen`);
         this.nextLevel();
     }
 
     nextLevel() {
         this.isProcessing = false;
+
+        // Check if break is needed (after 10 rounds)
+        if (this.roundsPlayed > 0 && this.roundsPlayed % this.BREAK_AFTER_ROUNDS === 0) {
+            this.showBreakScreen();
+            return;
+        }
+
+        switch (this.currentMode) {
+            case 'count': this.setupCountMode(); break;
+            case 'find': this.setupFindMode(); break;
+            case 'comparison': this.setupComparisonMode(); break;
+            case 'memory': this.setupMemoryMode(); break;
+        }
+    }
+
+    showBreakScreen() {
+        // Create a friendly break overlay
+        const overlay = this.ui.feedbackOverlay;
+        this.ui.feedbackEmoji.textContent = '🌟';
+        this.ui.feedbackMessage.innerHTML = `
+            <div style="font-size: 1.3rem; margin-bottom: 1rem;">Super gemacht! Du hast schon ${this.roundsPlayed} Runden gespielt!</div>
+            <div style="font-size: 1rem; margin-bottom: 1.5rem;">Zeit für eine kleine Pause? 🧃</div>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="game.continueAfterBreak()" style="font-size: 1rem;">Weiter spielen! 🎮</button>
+                <button class="btn btn-secondary" onclick="game.showStartScreen()" style="font-size: 1rem;">Anderes Spiel 🔄</button>
+            </div>
+        `;
+        overlay.classList.remove('hidden');
+        overlay.classList.add('visible');
+
+        // Play a gentle sound
+        this.audio.playSuccess();
+    }
+
+    continueAfterBreak() {
+        this.ui.feedbackOverlay.classList.remove('visible');
+        this.ui.feedbackOverlay.classList.add('hidden');
+        this.ui.feedbackMessage.innerHTML = ''; // Reset message
+
+        // Continue playing - increment happens in handleSuccess, so go to next level
         switch (this.currentMode) {
             case 'count': this.setupCountMode(); break;
             case 'find': this.setupFindMode(); break;
@@ -549,6 +594,7 @@ class NumberSafari {
     handleSuccess() {
         this.audio.playSuccess();
         this.score += 10;
+        this.roundsPlayed++; // Count this round
         this.ui.scoreValue.textContent = this.score;
 
         // Save to DB
@@ -569,6 +615,7 @@ class NumberSafari {
     handleLevelComplete() {
         // Special handling for memory game completion
         this.score += 20; // Bonus
+        this.roundsPlayed++; // Count this round (memory game)
         this.ui.scoreValue.textContent = this.score;
         if (this.currentUser) {
             this.db.updateScore(this.currentUser.id, 20);
