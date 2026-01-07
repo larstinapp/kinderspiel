@@ -45,7 +45,8 @@ body {
     background-position: center bottom;
     background-attachment: fixed;
     height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    height: 100dvh;
+    /* Dynamic viewport height for mobile browsers */
     overflow: hidden;
     display: flex;
     justify-content: center;
@@ -867,6 +868,59 @@ input[type="text"]:focus {
     color: var(--text-main);
 }
 
+/* --- Tutorial Overlay --- */
+.tutorial-content {
+    background: white;
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 90vw;
+    max-height: 80vh;
+    transform: scale(0.5);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.overlay.visible .tutorial-content {
+    transform: scale(1);
+}
+
+.tutorial-image {
+    max-width: 280px;
+    max-height: 280px;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+}
+
+.btn-round {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    font-size: 2rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 0 var(--primary-dark), var(--shadow-lg);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
 /* --- Navigation & Footer --- */
 .game-footer {
     position: absolute;
@@ -877,6 +931,9 @@ input[type="text"]:focus {
     display: flex;
     justify-content: flex-start;
 }
+
+"
+
 
 /* --- Responsive Helpers --- */
 .hidden {

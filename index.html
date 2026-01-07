@@ -134,7 +134,8 @@
             <!-- Game Mode: Find -->
             <section id="find-screen" class="game-screen game-mode" aria-label="Spiel: Zahlen finden">
                 <div class="question-header">
-                    <h2 class="question-text">Tippe auf die <span id="target-number" class="highlight-number">?</span>!</h2>
+                    <h2 class="question-text">Tippe auf die <span id="target-number" class="highlight-number">?</span>!
+                    </h2>
                     </h2>
                 </div>
                 <div id="find-options" class="game-stage options-grid-large"></div>
@@ -175,6 +176,14 @@
                 <div id="feedback-animation-container"></div>
                 <span id="feedback-emoji" class="emoji-large"></span>
                 <p id="feedback-message" class="message-large"></p>
+            </div>
+        </div>
+
+        <!-- Tutorial Overlay -->
+        <div id="tutorial-overlay" class="overlay hidden">
+            <div class="tutorial-content">
+                <img id="tutorial-image" src="" alt="Spielanleitung" class="tutorial-image">
+                <button class="btn btn-primary btn-round tutorial-start" onclick="game.closeTutorial()">▶️</button>
             </div>
         </div>
     </div>

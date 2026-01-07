@@ -134,8 +134,21 @@ class NumberSafari {
             feedbackOverlay: document.getElementById('feedback-overlay'),
             feedbackEmoji: document.getElementById('feedback-emoji'),
             feedbackMessage: document.getElementById('feedback-message'),
-            feedbackAnim: document.getElementById('feedback-animation-container')
+            feedbackAnim: document.getElementById('feedback-animation-container'),
+            tutorialOverlay: document.getElementById('tutorial-overlay'),
+            tutorialImage: document.getElementById('tutorial-image')
         };
+
+        // Tutorial images for each game mode
+        this.tutorialImages = {
+            count: 'tutorial_count.png',
+            find: 'tutorial_find.png',
+            comparison: 'tutorial_compare.png',
+            memory: 'tutorial_memory.png'
+        };
+
+        // Track which tutorials have been seen (reset on page reload)
+        this.seenTutorials = {};
 
         // Memory Game State
         this.memoryState = {
@@ -313,8 +326,34 @@ class NumberSafari {
     startMode(mode) {
         this.isProcessing = false;
         this.currentMode = mode;
-        this.roundsPlayed = 0; // Reset round counter for new game mode
+        this.roundsPlayed = 0;
         this.showScreen(`${mode}-screen`);
+
+        // Show tutorial if not seen yet
+        if (!this.seenTutorials[mode]) {
+            this.showTutorial(mode);
+        } else {
+            this.nextLevel();
+        }
+    }
+
+    showTutorial(mode) {
+        const tutorialImg = this.tutorialImages[mode];
+        if (tutorialImg && this.ui.tutorialOverlay) {
+            this.ui.tutorialImage.src = tutorialImg;
+            this.ui.tutorialOverlay.classList.remove('hidden');
+            this.ui.tutorialOverlay.classList.add('visible');
+            this.audio.playPop();
+        } else {
+            this.nextLevel();
+        }
+    }
+
+    closeTutorial() {
+        this.ui.tutorialOverlay.classList.remove('visible');
+        this.ui.tutorialOverlay.classList.add('hidden');
+        this.seenTutorials[this.currentMode] = true;
+        this.audio.playClick();
         this.nextLevel();
     }
 
