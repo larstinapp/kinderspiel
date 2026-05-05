@@ -31,18 +31,15 @@ class SoundManager {
     }
 
     playError() {
-        // Low discord
-        this.playTone(150, 'sawtooth', 0.4);
-        setTimeout(() => this.playTone(140, 'sawtooth', 0.4), 100);
+        // Gentle "try again" sound.
+        this.playTone(392, 'sine', 0.16);
+        setTimeout(() => this.playTone(330, 'sine', 0.18), 120);
     }
 
     playClick() {
         this.playTone(800, 'triangle', 0.05);
     }
 
-    playPop() {
-        this.playTone(600, 'sine', 0.1);
-    }
     playPop() {
         this.playTone(600, 'sine', 0.1);
     }
@@ -159,7 +156,8 @@ class NumberSafari {
 
         // Round counter for break after 10 rounds per game mode
         this.roundsPlayed = 0;
-        this.BREAK_AFTER_ROUNDS = 10;
+        this.BREAK_AFTER_ROUNDS = 6;
+        this.successMessages = ['Richtig!', 'Super!', 'Klasse!', 'Du kannst das!', 'Juhu!'];
 
         this.init();
     }
@@ -272,7 +270,6 @@ class NumberSafari {
 
         nameInput.value = '';
         this.audio.playSuccess();
-        this.showProfileScreen();
     }
 
     login(profile) {
@@ -296,7 +293,7 @@ class NumberSafari {
         const list = document.getElementById('ranking-list');
         list.innerHTML = '';
 
-        const sorted = [...this.profiles].sort((a, b) => b.score - a.score);
+        const sorted = [...this.db.getProfiles()].sort((a, b) => b.score - a.score);
 
         sorted.forEach((p, i) => {
             const item = document.createElement('div');
@@ -318,6 +315,9 @@ class NumberSafari {
 
     showStartScreen() {
         this.currentMode = null;
+        this.ui.feedbackOverlay.classList.remove('visible');
+        this.ui.feedbackOverlay.classList.add('hidden');
+        this.ui.feedbackMessage.innerHTML = '';
         this.showScreen('start-screen');
     }
 
@@ -380,7 +380,7 @@ class NumberSafari {
         this.ui.feedbackEmoji.textContent = '🌟';
         this.ui.feedbackMessage.innerHTML = `
             <div style="font-size: 1.3rem; margin-bottom: 1rem;">Super gemacht! Du hast schon ${this.roundsPlayed} Runden gespielt!</div>
-            <div style="font-size: 1rem; margin-bottom: 1.5rem;">Zeit für eine kleine Pause? 🧃</div>
+            <div style="font-size: 1rem; margin-bottom: 1.5rem;">Zeit für eine Trinkpause? 🧃</div>
             <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
                 <button class="btn btn-primary" onclick="game.continueAfterBreak()" style="font-size: 1rem;">Weiter spielen! 🎮</button>
                 <button class="btn btn-secondary" onclick="game.showStartScreen()" style="font-size: 1rem;">Anderes Spiel 🔄</button>
@@ -409,7 +409,7 @@ class NumberSafari {
 
     // Mode: Count (1-9)
     setupCountMode() {
-        const count = Math.floor(Math.random() * 9) + 1;
+        const count = this.randomNumberForMode('count');
         this.correctAnswer = count;
 
         const display = document.getElementById('animal-display');
@@ -429,26 +429,28 @@ class NumberSafari {
             display.appendChild(img);
         }
 
-        this.generateOptions(options, count, 3);
+        this.setCoach('count', count <= 5 ? 'Du kannst mit dem Finger mitzaehlen.' : 'Nimm dir Zeit beim Zaehlen.');
+        this.generateOptions(options, count, 3, this.getNumberLimit('count'));
     }
 
     // Mode: Find (1-9)
     setupFindMode() {
-        const target = Math.floor(Math.random() * 9) + 1;
+        const target = this.randomNumberForMode('find');
         this.correctAnswer = target;
         document.getElementById('target-number').textContent = target;
 
         const options = document.getElementById('find-options');
         options.innerHTML = '';
-        this.generateOptions(options, target, 5); // More options for find mode
+        this.setCoach('find', target <= 5 ? 'Schau genau hin.' : 'Die Zahl steht auf einem der grossen Knoepfe.');
+        this.generateOptions(options, target, 4, this.getNumberLimit('find'));
     }
 
     // Mode: Comparison
     setupComparisonMode() {
         // Ensure distinct values
-        let left = Math.floor(Math.random() * 9) + 1;
+        let left = this.randomNumberForMode('comparison');
         let right;
-        do { right = Math.floor(Math.random() * 9) + 1; } while (right === left);
+        do { right = this.randomNumberForMode('comparison'); } while (right === left);
 
         this.correctAnswer = left > right ? 'left' : 'right';
 
@@ -457,24 +459,28 @@ class NumberSafari {
 
         this.fillBox(leftBox, left);
         this.fillBox(rightBox, right);
+        this.setCoach('comparison', 'Welche Gruppe sieht groesser aus?');
     }
 
     fillBox(box, count) {
         box.innerHTML = ''; // Clear previous content
+        box.style.borderColor = '';
         const animalImg = this.animals[Math.floor(Math.random() * this.animals.length)];
 
         for (let i = 0; i < count; i++) {
             const img = document.createElement('img');
             img.src = animalImg;
             img.className = 'animal-item';
-            img.style.width = count > 5 ? '40px' : '60px'; // Adjust size based on density
-            img.style.height = count > 5 ? '40px' : '60px';
+            const animalSize = count > 3 ? 44 : 64;
+            img.style.width = `${animalSize}px`;
+            img.style.height = `${animalSize}px`;
             box.appendChild(img);
         }
     }
 
     checkComparison(side) {
         if (this.isProcessing) return;
+        this.isProcessing = true;
 
         // Visual feedback on selection
         const selectedBox = document.getElementById(`compare-${side}`);
@@ -485,8 +491,13 @@ class NumberSafari {
         } else {
             selectedBox.classList.add('shake');
             selectedBox.style.borderColor = 'var(--danger)';
-            setTimeout(() => selectedBox.classList.remove('shake'), 500);
             this.handleError();
+            this.setCoach('comparison', 'Fast! Versuch die andere Seite.');
+            setTimeout(() => {
+                selectedBox.classList.remove('shake');
+                selectedBox.style.borderColor = '';
+                this.isProcessing = false;
+            }, 700);
         }
     }
 
@@ -494,14 +505,14 @@ class NumberSafari {
     setupMemoryMode() {
         const grid = document.getElementById('memory-grid');
         grid.innerHTML = '';
-        this.memoryState = { flipped: [], locked: false, pairs: 0 };
+        const pairsCount = this.roundsPlayed < 3 ? 2 : 3;
+        this.memoryState = { flipped: [], locked: false, pairs: 0, totalPairs: pairsCount };
+        grid.dataset.pairs = pairsCount;
 
-        // 3 pairs for 6 cards total
-        const pairsCount = 3;
         const usedValues = [];
 
         while (usedValues.length < pairsCount) {
-            let val = Math.floor(Math.random() * 6) + 1;
+            let val = Math.floor(Math.random() * 5) + 1;
             if (!usedValues.includes(val)) usedValues.push(val);
         }
 
@@ -574,12 +585,13 @@ class NumberSafari {
                 this.memoryState.locked = false;
                 this.memoryState.pairs++;
 
-                if (this.memoryState.pairs === 3) {
+                if (this.memoryState.pairs === this.memoryState.totalPairs) {
                     this.handleLevelComplete(); // Memory full level complete
                 }
             }, 1000);
         } else {
             this.audio.playError();
+            this.setCoach('memory', 'Das war fast. Schau noch einmal.');
             setTimeout(() => {
                 first.card.classList.remove('flipped');
                 second.card.classList.remove('flipped');
@@ -591,10 +603,29 @@ class NumberSafari {
 
     // --- Helpers ---
 
-    generateOptions(container, correct, count) {
+    getNumberLimit(mode) {
+        if (mode === 'comparison') return 5;
+        if (this.roundsPlayed < 5) return 5;
+        if (this.roundsPlayed < 10) return 7;
+        return 9;
+    }
+
+    randomNumberForMode(mode) {
+        return Math.floor(Math.random() * this.getNumberLimit(mode)) + 1;
+    }
+
+    setCoach(mode, text) {
+        const coach = document.getElementById(`${mode}-coach`);
+        if (coach) coach.textContent = text;
+    }
+
+    generateOptions(container, correct, count, maxNumber = 9) {
         const opts = [correct];
         while (opts.length < count) {
-            let r = Math.floor(Math.random() * 9) + 1;
+            const low = Math.max(1, correct - 2);
+            const high = Math.min(maxNumber, correct + 2);
+            let r = Math.floor(Math.random() * (high - low + 1)) + low;
+            if (opts.includes(r)) r = Math.floor(Math.random() * maxNumber) + 1;
             if (!opts.includes(r)) opts.push(r);
         }
         opts.sort((a, b) => a - b);
@@ -603,6 +634,7 @@ class NumberSafari {
             const btn = document.createElement('button');
             btn.className = 'option-btn';
             btn.textContent = val;
+            btn.setAttribute('aria-label', `Antwort ${val}`);
             btn.onclick = (e) => this.checkAnswer(val, e.target);
             container.appendChild(btn);
         });
@@ -617,9 +649,10 @@ class NumberSafari {
             btnElement.style.color = 'white';
             this.handleSuccess();
         } else {
-            btnElement.style.background = 'var(--danger)';
-            btnElement.style.color = 'white';
+            btnElement.style.background = '#FFE8A3';
+            btnElement.style.color = 'var(--text-main)';
             btnElement.classList.add('shake');
+            this.setCoach(this.currentMode, 'Fast! Versuch noch einmal.');
             this.handleError();
             setTimeout(() => {
                 this.isProcessing = false;
@@ -643,7 +676,7 @@ class NumberSafari {
 
         // Visual Confetti
         confetti({
-            particleCount: 100,
+            particleCount: 60,
             spread: 70,
             origin: { y: 0.6 }
         });
@@ -659,7 +692,7 @@ class NumberSafari {
         if (this.currentUser) {
             this.db.updateScore(this.currentUser.id, 20);
         }
-        confetti({ particleCount: 150, spread: 100 });
+        confetti({ particleCount: 90, spread: 100 });
         this.showFeedback(true);
     }
 
@@ -680,14 +713,17 @@ class NumberSafari {
         // Only showing success modal to move to next level
         if (!isSuccess) return;
 
+        const msg = this.successMessages[Math.floor(Math.random() * this.successMessages.length)];
         this.ui.feedbackEmoji.textContent = '🎉';
-        this.ui.feedbackMessage.textContent = 'Richtig!';
+        this.ui.feedbackMessage.textContent = msg;
+        this.ui.feedbackOverlay.classList.remove('hidden');
         this.ui.feedbackOverlay.classList.add('visible');
 
         setTimeout(() => {
             this.ui.feedbackOverlay.classList.remove('visible');
+            this.ui.feedbackOverlay.classList.add('hidden');
             this.nextLevel();
-        }, 1500);
+        }, 1000);
     }
 }
 

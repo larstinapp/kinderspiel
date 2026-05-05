@@ -78,34 +78,34 @@
                     <div class="hero-image">
                         <img src="safari_background_1767717575932.png" alt="Safari Landschaft">
                     </div>
-                    <h2>Was möchtest du spielen? 🎮</h2>
+                    <h2>Such dir ein Spiel aus 🎮</h2>
                     <div class="mode-grid">
                         <button class="mode-card" onclick="game.startMode('count')">
                             <div class="mode-icon">🦁</div>
                             <div class="mode-info">
-                                <h3>Tiere zählen</h3>
-                                <p>Zähle die Tiere!</p>
+                                <h3>Zählen</h3>
+                                <p>Wie viele Tiere?</p>
                             </div>
                         </button>
                         <button class="mode-card" onclick="game.startMode('find')">
                             <div class="mode-icon">🔍</div>
                             <div class="mode-info">
-                                <h3>Zahlen finden</h3>
-                                <p>Tippe auf die richtige Zahl!</p>
+                                <h3>Zahl suchen</h3>
+                                <p>Finde die Zahl!</p>
                             </div>
                         </button>
                         <button class="mode-card" onclick="game.startMode('comparison')">
                             <div class="mode-icon">⚖️</div>
                             <div class="mode-info">
-                                <h3>Mehr oder weniger?</h3>
-                                <p>Wo sind mehr Tiere?</p>
+                                <h3>Mehr Tiere</h3>
+                                <p>Welche Seite gewinnt?</p>
                             </div>
                         </button>
                         <button class="mode-card" onclick="game.startMode('memory')">
                             <div class="mode-icon">🃏</div>
                             <div class="mode-info">
-                                <h3>Memo-Spiel</h3>
-                                <p>Finde immer 2 gleiche!</p>
+                                <h3>Memo</h3>
+                                <p>Finde die Paare!</p>
                             </div>
                         </button>
                     </div>
@@ -126,6 +126,7 @@
             <section id="count-screen" class="game-screen game-mode" aria-label="Spiel: Tiere zählen">
                 <div class="question-header">
                     <h2 class="question-text">Zähle die Tiere! 🦁</h2>
+                    <p id="count-coach" class="coach-line">Erst gucken, dann tippen.</p>
                 </div>
                 <div id="animal-display" class="game-stage animal-stage"></div>
                 <div id="answer-options" class="options-bar"></div>
@@ -136,7 +137,7 @@
                 <div class="question-header">
                     <h2 class="question-text">Tippe auf die <span id="target-number" class="highlight-number">?</span>!
                     </h2>
-                    </h2>
+                    <p id="find-coach" class="coach-line">Du findest sie.</p>
                 </div>
                 <div id="find-options" class="game-stage options-grid-large"></div>
             </section>
@@ -144,7 +145,8 @@
             <!-- Game Mode: Comparison -->
             <section id="comparison-screen" class="game-screen game-mode" aria-label="Spiel: Vergleichen">
                 <div class="question-header">
-                    <h2 class="question-text">Tippe auf die Seite mit mehr Tieren! 👆</h2>
+                    <h2 class="question-text">Wo sind mehr Tiere? 👆</h2>
+                    <p id="comparison-coach" class="coach-line">Tippe links oder rechts.</p>
                 </div>
                 <div class="comparison-stage">
                     <button id="compare-left" class="compare-card" onclick="game.checkComparison('left')"></button>
@@ -156,7 +158,8 @@
             <!-- Game Mode: Memory -->
             <section id="memory-screen" class="game-screen game-mode" aria-label="Spiel: Memory">
                 <div class="question-header">
-                    <h2 class="question-text">Finde 2 die zusammen gehören! 🃏</h2>
+                    <h2 class="question-text">Finde zwei passende Karten 🃏</h2>
+                    <p id="memory-coach" class="coach-line">Zahl und Tiere gehören zusammen.</p>
                 </div>
                 <div id="memory-grid" class="memory-board"></div>
             </section>
@@ -171,7 +174,7 @@
         </footer>
 
         <!-- Overlays -->
-        <div id="feedback-overlay" class="overlay hidden">
+        <div id="feedback-overlay" class="overlay hidden" aria-live="polite">
             <div class="feedback-content">
                 <div id="feedback-animation-container"></div>
                 <span id="feedback-emoji" class="emoji-large"></span>
