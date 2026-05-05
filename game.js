@@ -141,7 +141,10 @@ class NumberSafari {
             count: 'tutorial_count.png',
             find: 'tutorial_find.png',
             comparison: 'tutorial_compare.png',
-            memory: 'tutorial_memory.png'
+            memory: 'tutorial_memory.png',
+            sequence: null,
+            feed: null,
+            pattern: null
         };
 
         // Track which tutorials have been seen (reset on page reload)
@@ -371,6 +374,9 @@ class NumberSafari {
             case 'find': this.setupFindMode(); break;
             case 'comparison': this.setupComparisonMode(); break;
             case 'memory': this.setupMemoryMode(); break;
+            case 'sequence': this.setupSequenceMode(); break;
+            case 'feed': this.setupFeedMode(); break;
+            case 'pattern': this.setupPatternMode(); break;
         }
     }
 
@@ -404,6 +410,9 @@ class NumberSafari {
             case 'find': this.setupFindMode(); break;
             case 'comparison': this.setupComparisonMode(); break;
             case 'memory': this.setupMemoryMode(); break;
+            case 'sequence': this.setupSequenceMode(); break;
+            case 'feed': this.setupFeedMode(); break;
+            case 'pattern': this.setupPatternMode(); break;
         }
     }
 
@@ -601,10 +610,112 @@ class NumberSafari {
         }
     }
 
+    // Mode: Sequence
+    setupSequenceMode() {
+        const maxStart = this.roundsPlayed < 5 ? 3 : 6;
+        const start = Math.floor(Math.random() * maxStart) + 1;
+        const answer = start + 3;
+        this.correctAnswer = answer;
+
+        const display = document.getElementById('sequence-display');
+        const options = document.getElementById('sequence-options');
+        display.innerHTML = '';
+        options.innerHTML = '';
+
+        [start, start + 1, start + 2].forEach(num => {
+            const item = document.createElement('div');
+            item.className = 'train-number';
+            item.textContent = num;
+            display.appendChild(item);
+        });
+
+        const mystery = document.createElement('div');
+        mystery.className = 'train-number mystery-number';
+        mystery.textContent = '?';
+        display.appendChild(mystery);
+
+        this.setCoach('sequence', `${start}, ${start + 1}, ${start + 2} ...`);
+        this.generateOptions(options, answer, 3, Math.min(9, answer + 1));
+    }
+
+    // Mode: Feed
+    setupFeedMode() {
+        const target = this.randomNumberForMode('feed');
+        this.correctAnswer = target;
+        document.getElementById('feed-target').textContent = target;
+
+        const options = document.getElementById('feed-options');
+        options.innerHTML = '';
+
+        const values = this.createNearbyValues(target, 3, this.getNumberLimit('feed'));
+        values.forEach(value => {
+            const btn = document.createElement('button');
+            btn.className = 'feed-card';
+            btn.setAttribute('aria-label', `${value} Futterstücke`);
+            btn.onclick = () => this.checkAnswer(value, btn);
+
+            const bowl = document.createElement('div');
+            bowl.className = 'food-bowl';
+            for (let i = 0; i < value; i++) {
+                const food = document.createElement('span');
+                food.className = 'food-piece';
+                food.textContent = '🥕';
+                bowl.appendChild(food);
+            }
+
+            const label = document.createElement('div');
+            label.className = 'feed-label';
+            label.textContent = value;
+
+            btn.appendChild(bowl);
+            btn.appendChild(label);
+            options.appendChild(btn);
+        });
+
+        this.setCoach('feed', 'Zähle die Karotten in jeder Schale.');
+    }
+
+    // Mode: Pattern
+    setupPatternMode() {
+        const row = document.getElementById('pattern-row');
+        const options = document.getElementById('pattern-options');
+        row.innerHTML = '';
+        options.innerHTML = '';
+
+        const first = this.animals[Math.floor(Math.random() * this.animals.length)];
+        let second;
+        do { second = this.animals[Math.floor(Math.random() * this.animals.length)]; } while (second === first);
+
+        const pattern = [first, second, first, second];
+        this.correctAnswer = first;
+
+        pattern.forEach(src => row.appendChild(this.createPatternTile(src)));
+
+        const mystery = document.createElement('div');
+        mystery.className = 'pattern-tile mystery-number';
+        mystery.textContent = '?';
+        row.appendChild(mystery);
+
+        [first, second].sort(() => Math.random() - 0.5).forEach(src => {
+            const btn = document.createElement('button');
+            btn.className = 'pattern-option';
+            btn.setAttribute('aria-label', 'Tier auswählen');
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = '';
+            btn.appendChild(img);
+            btn.onclick = () => this.checkPatternAnswer(src, btn);
+            options.appendChild(btn);
+        });
+
+        this.setCoach('pattern', 'Erst links nach rechts schauen.');
+    }
+
     // --- Helpers ---
 
     getNumberLimit(mode) {
         if (mode === 'comparison') return 5;
+        if (mode === 'sequence') return this.roundsPlayed < 5 ? 6 : 9;
         if (this.roundsPlayed < 5) return 5;
         if (this.roundsPlayed < 10) return 7;
         return 9;
@@ -619,7 +730,7 @@ class NumberSafari {
         if (coach) coach.textContent = text;
     }
 
-    generateOptions(container, correct, count, maxNumber = 9) {
+    createNearbyValues(correct, count, maxNumber = 9) {
         const opts = [correct];
         while (opts.length < count) {
             const low = Math.max(1, correct - 2);
@@ -628,6 +739,41 @@ class NumberSafari {
             if (opts.includes(r)) r = Math.floor(Math.random() * maxNumber) + 1;
             if (!opts.includes(r)) opts.push(r);
         }
+        return opts.sort(() => Math.random() - 0.5);
+    }
+
+    createPatternTile(src) {
+        const tile = document.createElement('div');
+        tile.className = 'pattern-tile';
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = '';
+        tile.appendChild(img);
+        return tile;
+    }
+
+    checkPatternAnswer(src, btnElement) {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        if (src === this.correctAnswer) {
+            btnElement.style.background = 'var(--success)';
+            this.handleSuccess();
+        } else {
+            btnElement.style.background = '#FFE8A3';
+            btnElement.classList.add('shake');
+            this.setCoach('pattern', 'Fast! Schau dir die Reihenfolge noch einmal an.');
+            this.handleError();
+            setTimeout(() => {
+                this.isProcessing = false;
+                btnElement.classList.remove('shake');
+                btnElement.style.background = '';
+            }, 700);
+        }
+    }
+
+    generateOptions(container, correct, count, maxNumber = 9) {
+        const opts = this.createNearbyValues(correct, count, maxNumber);
         opts.sort((a, b) => a - b);
 
         opts.forEach(val => {

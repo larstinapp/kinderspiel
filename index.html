@@ -108,6 +108,27 @@
                                 <p>Finde die Paare!</p>
                             </div>
                         </button>
+                        <button class="mode-card" onclick="game.startMode('sequence')">
+                            <div class="mode-icon">🔢</div>
+                            <div class="mode-info">
+                                <h3>Danach</h3>
+                                <p>Welche Zahl kommt?</p>
+                            </div>
+                        </button>
+                        <button class="mode-card" onclick="game.startMode('feed')">
+                            <div class="mode-icon">🥕</div>
+                            <div class="mode-info">
+                                <h3>Futter</h3>
+                                <p>Gib die richtige Menge!</p>
+                            </div>
+                        </button>
+                        <button class="mode-card" onclick="game.startMode('pattern')">
+                            <div class="mode-icon">🌈</div>
+                            <div class="mode-info">
+                                <h3>Muster</h3>
+                                <p>Was passt weiter?</p>
+                            </div>
+                        </button>
                     </div>
                     <button class="btn btn-text btn-small" onclick="game.logout()">⬅️ Anderes Profil</button>
                 </div>
@@ -162,6 +183,35 @@
                     <p id="memory-coach" class="coach-line">Zahl und Tiere gehören zusammen.</p>
                 </div>
                 <div id="memory-grid" class="memory-board"></div>
+            </section>
+
+            <!-- Game Mode: Sequence -->
+            <section id="sequence-screen" class="game-screen game-mode" aria-label="Spiel: Zahlenreihe">
+                <div class="question-header">
+                    <h2 class="question-text">Welche Zahl kommt danach? 🔢</h2>
+                    <p id="sequence-coach" class="coach-line">Zähle leise weiter.</p>
+                </div>
+                <div id="sequence-display" class="number-train"></div>
+                <div id="sequence-options" class="options-bar"></div>
+            </section>
+
+            <!-- Game Mode: Feed -->
+            <section id="feed-screen" class="game-screen game-mode" aria-label="Spiel: Tiere füttern">
+                <div class="question-header">
+                    <h2 class="question-text">Gib <span id="feed-target" class="highlight-number">?</span> Futter 🥕</h2>
+                    <p id="feed-coach" class="coach-line">Wähle die Schale mit der richtigen Menge.</p>
+                </div>
+                <div id="feed-options" class="choice-stage"></div>
+            </section>
+
+            <!-- Game Mode: Pattern -->
+            <section id="pattern-screen" class="game-screen game-mode" aria-label="Spiel: Muster erkennen">
+                <div class="question-header">
+                    <h2 class="question-text">Was passt als Nächstes? 🌈</h2>
+                    <p id="pattern-coach" class="coach-line">Schau dir das Muster an.</p>
+                </div>
+                <div id="pattern-row" class="pattern-row"></div>
+                <div id="pattern-options" class="options-bar"></div>
             </section>
 
         </main>

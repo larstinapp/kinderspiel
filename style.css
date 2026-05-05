@@ -258,6 +258,8 @@ h2 {
 .option-btn:focus-visible,
 .compare-card:focus-visible,
 .memory-card:focus-visible,
+.feed-card:focus-visible,
+.pattern-option:focus-visible,
 .profile-card:focus-visible {
     outline: 5px solid var(--focus-ring);
     outline-offset: 4px;
@@ -441,7 +443,7 @@ input[type="text"]:focus {
 /* --- Mode Selection --- */
 .mode-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem;
     width: 100%;
     flex: 1;
@@ -474,7 +476,7 @@ input[type="text"]:focus {
     width: 100%;
     height: auto;
     /* Let grid handle height */
-    min-height: 132px;
+    min-height: 118px;
 }
 
 @media (max-height: 700px) {
@@ -851,6 +853,136 @@ input[type="text"]:focus {
     object-fit: contain;
 }
 
+/* Sequence, Feed & Pattern Modes */
+.number-train {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    width: 100%;
+    flex: 1;
+    min-height: 160px;
+    margin-bottom: 1rem;
+}
+
+.train-number,
+.pattern-tile {
+    width: clamp(78px, 14vw, 118px);
+    height: clamp(78px, 14vw, 118px);
+    border-radius: var(--radius-md);
+    background: white;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(2rem, 8vw, 3.6rem);
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.mystery-number {
+    background: var(--accent);
+    color: var(--text-main);
+}
+
+.choice-stage {
+    width: 100%;
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+    gap: 1rem;
+    align-items: center;
+    justify-items: center;
+}
+
+.feed-card {
+    width: min(100%, 220px);
+    min-height: 210px;
+    border: 4px solid transparent;
+    border-radius: var(--radius-md);
+    background: white;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem;
+    transition: all 0.15s;
+    touch-action: manipulation;
+}
+
+.feed-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary);
+}
+
+.food-bowl {
+    min-height: 126px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    gap: 0.2rem;
+}
+
+.food-piece {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    line-height: 1;
+}
+
+.feed-label {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255, 217, 61, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.pattern-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    width: 100%;
+    flex: 1;
+    min-height: 160px;
+    margin-bottom: 1rem;
+}
+
+.pattern-tile img,
+.pattern-option img {
+    width: 82%;
+    height: 82%;
+    object-fit: contain;
+}
+
+.pattern-option {
+    width: clamp(86px, 16vw, 118px);
+    height: clamp(86px, 16vw, 118px);
+    border-radius: var(--radius-md);
+    border: none;
+    background: white;
+    box-shadow: 0 4px 0 #E0E0E0, var(--shadow-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    touch-action: manipulation;
+}
+
+.pattern-option:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 0 #E0E0E0, var(--shadow-md);
+}
+
 /* --- Feedback Overlay --- */
 .overlay {
     position: fixed;
@@ -1042,6 +1174,37 @@ input[type="text"]:focus {
 
     .memory-board {
         gap: 0.75rem;
+    }
+
+    .mode-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .number-train,
+    .pattern-row {
+        gap: 0.45rem;
+        min-height: 120px;
+        flex-wrap: wrap;
+    }
+
+    .choice-stage {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.55rem;
+    }
+
+    .feed-card {
+        min-height: 162px;
+        padding: 0.55rem;
+    }
+
+    .food-bowl {
+        min-height: 92px;
+    }
+
+    .feed-label {
+        width: 44px;
+        height: 44px;
+        font-size: 1.45rem;
     }
 }
 
