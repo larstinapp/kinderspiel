@@ -416,7 +416,7 @@ class NumberSafari {
         }
     }
 
-    // Mode: Count (1-9)
+    // Mode: Count
     setupCountMode() {
         const count = this.randomNumberForMode('count');
         this.correctAnswer = count;
@@ -425,6 +425,7 @@ class NumberSafari {
         const options = document.getElementById('answer-options');
         display.innerHTML = '';
         options.innerHTML = '';
+        display.dataset.countSize = count > 9 ? 'large' : 'normal';
 
         // Random animal type for this round
         const animalImg = this.animals[Math.floor(Math.random() * this.animals.length)];
@@ -438,11 +439,11 @@ class NumberSafari {
             display.appendChild(img);
         }
 
-        this.setCoach('count', count <= 5 ? 'Du kannst mit dem Finger mitzaehlen.' : 'Nimm dir Zeit beim Zaehlen.');
+        this.setCoach('count', count <= 9 ? 'Du kennst die Zahlen schon gut.' : 'Jetzt kommen 10, 11 und 12 dazu.');
         this.generateOptions(options, count, 3, this.getNumberLimit('count'));
     }
 
-    // Mode: Find (1-9)
+    // Mode: Find
     setupFindMode() {
         const target = this.randomNumberForMode('find');
         this.correctAnswer = target;
@@ -450,7 +451,7 @@ class NumberSafari {
 
         const options = document.getElementById('find-options');
         options.innerHTML = '';
-        this.setCoach('find', target <= 5 ? 'Schau genau hin.' : 'Die Zahl steht auf einem der grossen Knoepfe.');
+        this.setCoach('find', target <= 9 ? 'Schau genau hin.' : 'Zweistellige Zahlen zählen mit.');
         this.generateOptions(options, target, 4, this.getNumberLimit('find'));
     }
 
@@ -480,7 +481,7 @@ class NumberSafari {
             const img = document.createElement('img');
             img.src = animalImg;
             img.className = 'animal-item';
-            const animalSize = count > 3 ? 44 : 64;
+            const animalSize = count > 6 ? 34 : (count > 3 ? 44 : 64);
             img.style.width = `${animalSize}px`;
             img.style.height = `${animalSize}px`;
             box.appendChild(img);
@@ -521,7 +522,7 @@ class NumberSafari {
         const usedValues = [];
 
         while (usedValues.length < pairsCount) {
-            let val = Math.floor(Math.random() * 5) + 1;
+            let val = this.randomInt(this.roundsPlayed < 3 ? 4 : 6, 9);
             if (!usedValues.includes(val)) usedValues.push(val);
         }
 
@@ -612,8 +613,8 @@ class NumberSafari {
 
     // Mode: Sequence
     setupSequenceMode() {
-        const maxStart = this.roundsPlayed < 5 ? 3 : 6;
-        const start = Math.floor(Math.random() * maxStart) + 1;
+        const maxAnswer = this.getNumberLimit('sequence');
+        const start = this.randomInt(maxAnswer <= 12 ? 7 : 10, maxAnswer - 3);
         const answer = start + 3;
         this.correctAnswer = answer;
 
@@ -634,8 +635,8 @@ class NumberSafari {
         mystery.textContent = '?';
         display.appendChild(mystery);
 
-        this.setCoach('sequence', `${start}, ${start + 1}, ${start + 2} ...`);
-        this.generateOptions(options, answer, 3, Math.min(9, answer + 1));
+        this.setCoach('sequence', `${start}, ${start + 1}, ${start + 2} ... weiterzählen.`);
+        this.generateOptions(options, answer, 3, Math.min(20, answer + 2));
     }
 
     // Mode: Feed
@@ -663,16 +664,11 @@ class NumberSafari {
                 bowl.appendChild(food);
             }
 
-            const label = document.createElement('div');
-            label.className = 'feed-label';
-            label.textContent = value;
-
             btn.appendChild(bowl);
-            btn.appendChild(label);
             options.appendChild(btn);
         });
 
-        this.setCoach('feed', 'Zähle die Karotten in jeder Schale.');
+        this.setCoach('feed', target <= 9 ? 'Zähle die Karotten in jeder Schale.' : 'Bei 10 und mehr hilft langsames Zählen.');
     }
 
     // Mode: Pattern
@@ -714,15 +710,27 @@ class NumberSafari {
     // --- Helpers ---
 
     getNumberLimit(mode) {
-        if (mode === 'comparison') return 5;
-        if (mode === 'sequence') return this.roundsPlayed < 5 ? 6 : 9;
-        if (this.roundsPlayed < 5) return 5;
-        if (this.roundsPlayed < 10) return 7;
-        return 9;
+        if (mode === 'comparison') return 9;
+        if (mode === 'sequence') return this.roundsPlayed < 5 ? 12 : 20;
+        if (mode === 'find') return this.roundsPlayed < 5 ? 12 : 20;
+        if (mode === 'count' || mode === 'feed') return this.roundsPlayed < 5 ? 10 : 12;
+        return 12;
+    }
+
+    getNumberFloor(mode) {
+        if (mode === 'sequence') return 7;
+        if (mode === 'comparison') return 4;
+        if (mode === 'find') return this.roundsPlayed < 5 ? 5 : 10;
+        if (mode === 'count' || mode === 'feed') return this.roundsPlayed < 5 ? 4 : 7;
+        return 1;
     }
 
     randomNumberForMode(mode) {
-        return Math.floor(Math.random() * this.getNumberLimit(mode)) + 1;
+        return this.randomInt(this.getNumberFloor(mode), this.getNumberLimit(mode));
+    }
+
+    randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
     setCoach(mode, text) {
@@ -735,8 +743,16 @@ class NumberSafari {
         while (opts.length < count) {
             const low = Math.max(1, correct - 2);
             const high = Math.min(maxNumber, correct + 2);
-            let r = Math.floor(Math.random() * (high - low + 1)) + low;
-            if (opts.includes(r)) r = Math.floor(Math.random() * maxNumber) + 1;
+            let candidates = [];
+            for (let i = low; i <= high; i++) {
+                if (!opts.includes(i)) candidates.push(i);
+            }
+            if (candidates.length === 0) {
+                for (let i = 1; i <= maxNumber; i++) {
+                    if (!opts.includes(i)) candidates.push(i);
+                }
+            }
+            const r = candidates[Math.floor(Math.random() * candidates.length)];
             if (!opts.includes(r)) opts.push(r);
         }
         return opts.sort(() => Math.random() - 0.5);
